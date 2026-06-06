@@ -1,0 +1,36 @@
+# ~/nginx/docker-compose.yml — nginx 단독 compose 프로젝트.
+# 사용 (EC2 ~/nginx 에서):
+#   docker compose up -d
+#
+# 네트워크: BE compose 프로젝트(~/bandage)가 자동 생성한 bandage_default 에
+# external 로 합류한다 — fe-web / bandage-band-manager DNS 해석을 위해 필수.
+# 주의: 네트워크 이름은 "BE compose 가 ~/bandage 디렉토리에서 실행된다"는 사실에서
+# 파생된 암묵적 이름이다. BE 배포 경로가 바뀌면 함께 수정해야 한다.
+# (향후 FE/BE 레포 정리 시 명명된 공유 네트워크로 승격 예정)
+
+services:
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: bandage-nginx
+    ports:
+      - '80:80'
+      # 향후 HTTPS 도입 시: '443:443' 추가 + cert volume 마운트
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    # depends_on 없음 — FE/BE 는 별도 compose 프로젝트.
+    # 기동 순서는 무관: conf 가 변수형 proxy_pass + resolver(127.0.0.11) 로
+    # 매 요청 시점에 DNS 를 해석하므로, 업스트림이 없어도 nginx 는 기동한다.
+    healthcheck:
+      # nginx 자체 응답만 확인 — FE/BE 생사와 무관하게 판정 (conf 의 /nginx-health)
+      test: ['CMD', 'wget', '-q', '--spider', 'http://127.0.0.1/nginx-health']
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    restart: always
+
+networks:
+  default:
+    name: bandage_default
+    external: true
