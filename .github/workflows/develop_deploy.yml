@@ -32,7 +32,7 @@ jobs:
             -v "$PWD/deploy/nginx/conf.d:/etc/nginx/conf.d:ro" \
             nginx:1.27-alpine nginx -t
 
-      # repo/deploy/* 를 EC2 ~/nginx/ 로 업로드.
+      # repo/deploy/* 를 EC2 ~/bandage-nginx/ 로 업로드.
       # FE 레포가 쓰는 ~/bandage/ 와 분리 — scp 상호 덮어쓰기 방지.
       - name: Upload deploy assets to EC2
         uses: appleboy/scp-action@v0.1.7
@@ -41,7 +41,7 @@ jobs:
           username: rocky
           key: ${{ secrets.EC2_SSH_KEY }}
           source: 'deploy/*'
-          target: '~/nginx/'
+          target: '~/bandage-nginx/'
           strip_components: 1
           overwrite: true
 
@@ -53,7 +53,7 @@ jobs:
           key: ${{ secrets.EC2_SSH_KEY }}
           script: |
             set -euo pipefail
-            cd ~/nginx
+            cd ~/bandage-nginx
 
             # 전제: BE compose 프로젝트(~/bandage)가 만든 bandage_default 네트워크.
             # 여기서 직접 생성하면 compose 라벨 불일치로 BE 쪽 up 이 깨지므로 생성하지 않는다.
@@ -63,11 +63,11 @@ jobs:
             fi
 
             # cutover: 과거 합본 프로젝트(bandage)가 소유한 bandage-nginx 컨테이너가
-            # 남아 있으면 이름이 충돌한다 — 제거 후 이 프로젝트(nginx)로 재생성.
-            # (compose 프로젝트명은 실행 디렉토리명 ~/nginx 에서 파생)
+            # 남아 있으면 이름이 충돌한다 — 제거 후 이 프로젝트(bandage-nginx)로 재생성.
+            # (compose 프로젝트명은 실행 디렉토리명 ~/bandage-nginx 에서 파생)
             owner=$(docker inspect bandage-nginx \
               --format '{{ index .Config.Labels "com.docker.compose.project" }}' 2>/dev/null || echo "")
-            if [ -n "$owner" ] && [ "$owner" != "nginx" ]; then
+            if [ -n "$owner" ] && [ "$owner" != "bandage-nginx" ]; then
               echo "기존 compose 프로젝트($owner) 소유의 nginx 컨테이너 인계 — 제거 후 재생성"
               docker rm -f bandage-nginx
             fi

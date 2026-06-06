@@ -1,5 +1,5 @@
-# ~/nginx/docker-compose.yml — nginx 단독 compose 프로젝트.
-# 사용 (EC2 ~/nginx 에서):
+# ~/bandage-nginx/docker-compose.yml — nginx 단독 compose 프로젝트.
+# 사용 (EC2 ~/bandage-nginx 에서):
 #   docker compose up -d
 #
 # 네트워크: BE compose 프로젝트(~/bandage)가 자동 생성한 bandage_default 에
